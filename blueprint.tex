@@ -1,0 +1,87 @@
+
+\chapter{Blueprint}
+
+    I blueprint di Unreal Engine permettono di programmare in modo visuale, attraverso una interfaccia grafica.
+
+    Per ogni blueprint e' possibile vedere e modificare l'aspetto del blueprint dalla finestra "viewport" e modificare gli eventi gestiti dal blueprint in "event graph".
+
+
+    % VIEWPORT
+    \section{Viewport}
+        In alto a sinistra e' possibile aggiungere componenti al blueprint cliccando sul tasto "Add".
+
+        Alcuni componenti utili sono:
+        \begin{itemize}
+            \item "static mesh": e' l'aspetto che avra' l'oggetto all'interno del gioco
+            \item "arrow" che permette ad esempio di ottenere la sua direzione ed e' solo visibile nel viewport principale e non in gioco
+            \item "box collision" per aggiungere collisioni
+        \end{itemize}
+
+
+    % EVENT GRAPH
+    \section{Event graph}
+
+        In event graph e' possibile configurare cosa succede all'istanza del blueprint in base agli eventi che vengono lanciati.
+        E' uno schema a blocchi in cui si specifica quali sequenze di azioni eseguire quando certi eventi sono attivi.
+
+        Da questa finestra e' possibile aggiungere variabili sotto a "variables" (e possono essere modificate anche dall'editor nel "details panel")
+        e aggiungere blocchi/nodi per eseguire funzioni quando viene lanciato un evento.
+
+        I due eventi di default sono "Event tick" che viene eseguito ad ogni frame e "Event BeginPlay" che viene eseguito quando viene fatto partire il gioco.
+
+        Cliccando con il tasto destro e' possibile cercare e piazzare nuovi blocchi/nodi.
+
+        Alcuni blocchi utili sono:
+
+        \begin{itemize}
+            \item "Get Overlapping Actors" su una box collision: permette di recuperare tutti gli oggetti all'interno della collisione
+            \item "For Each Loop" permette di effettuare un loop for each scorrendo tutti gli oggetti di una lista e per ogni elemento eseguire una serie di operazioni
+            \item "Get Class" permette di recuperare la classe di un oggetto
+            \item "Class is child of" permette di verificare insieme a "Get class" se un oggetto e' figlio di una classe
+            \item "Branch" permette di eseguire il ramo true se una condizione e' vera oppure il ramo false se la condizione e' falsa
+            \item "Add Actor World Offset" permette di spostare un oggetto di una quantita' specificata da un vettore (X, Y, Z) in input relativamente alla sua posizione attuale
+            \item "Multiply" permette di moltiplicare due elementi insieme
+            \item "Break Vector" permette di separare un vettore nelle sue 3 componenti float X, Y, Z
+            \item "Make Vector" permette di costruire un vettore a partire da 3 componenti float X, Y, Z
+            \item "Select Vector" permette di selezionare e restituire un vettore se una condizione e' vera oppure restituirne un altro se la condizione e' falsa.
+        \end{itemize}
+
+
+    % CONFRONTO CON CODICE C++
+    \section{Confronto con codice C++}
+        Vantaggi dei blueprint rispetto al codice C++:
+        \begin{itemize}
+            \item Con i blueprint, essendo un "linguaggio" che viene interpretato a runtime, non occorre attendere il tempo di compilazione che e' necessario prima di eseguire il codice C++.
+
+                Questo significa che, in generale, i tempi di sviluppo sono piu' rapidi mediante i blueprint.
+            \item Non e' necessario saper programmare con un linguaggio di programmazione "tradizionale" per aggiungere logica al gioco.
+        \end{itemize}
+
+        Svantaggi dei blueprint rispetto al codice C++:
+        \begin{itemize}
+            \item Essendo file binari non e' possibile sfruttare appieno gli strumenti di versioning control come git.
+
+                I sorgenti scritti in codice C++, essendo file di testo, permettono, ad esempio, di vedere ad ogni commit quali porzioni di codice sono state modificate all'interno di un file sorgente.
+
+                Con i blueprint e' solo possibile vedere che quel file e' stato modificato: per rimuovere una certa modifica bisogna sapere quale commit ha effettuato la modifica indesiderata e fare il "rollback" dell'intero blueprint (eliminando anche cio' che si desidererebbe mantenere).
+
+            \item Le prestazioni dei blueprint, essendo interpretati a runtime, possono risultare peggiori rispetto a codice scritto in C++.
+        \end{itemize}
+
+        E' consigliato scrivere in codice C++:
+        \begin{itemize}
+            \item tutto cio' che deve avere alte prestazioni
+            \item file sorgenti la cui scrittura richiede la collaborazione tra piu' programmatori, aiutandosi con strumenti come git
+        \end{itemize}
+
+        E' consigliato utilizzare i blueprint:
+        \begin{itemize}
+            \item per interfacciare porzioni di codice scritte internamente in C++
+            \item per creare blueprint, possibilmente "piccoli" (logica implementata semplice, pochi nodi, \dots), che non richiedono alte prestazioni oppure per creare blueprint che vengono chiamati raramente
+            \item per la configurazione di valori di parametri che possono variare spesso durante la fase di sviluppo
+            \item per permettere a personale che svolge mansioni diverse dalla programmazione (come, ad esempio, i level designer) di configurare facilmente alcuni parametri o di sviluppare blueprint piu' legati alla user experience
+
+                \begin{notebox}
+                    Alcune proprieta' che possono essere esposte attraverso i blueprint sono la velocita' del giocatore, quanto e' alto un salto, \dots
+                \end{notebox}
+        \end{itemize}

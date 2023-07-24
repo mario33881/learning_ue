@@ -1,0 +1,104 @@
+\chapter{Troubleshooting}
+
+    \begin{notebox}
+        Questa sezione e' stata realizzata per risolvere problemi con Unreal Engine 5.0.3 e Visual Studio 2022 Community Edition su sistema operativo Windows 10.
+    \end{notebox}
+
+
+    % VISUAL STUDIO
+    \section{Visual Studio}
+
+        \begin{nohyphens}
+            Se Visual Studio non trova header che esistono oppure si desidera eliminare dei file dal progetto puo' essere utile far ricreare da Unreal Engine i file per Visual Studio: fare click con il tasto destro sul file .uproject e selezionare "Generate Visual Studio project files".
+        \end{nohyphens}
+
+        \begin{warningbox}
+            Per generare i file e' necessario installare \href{https://dotnet.microsoft.com/en-us/download/dotnet/3.1}{".NET Runtime 3.1.30"}.
+        \end{warningbox}
+
+        \begin{suggestionbox}
+            Potrebbe essere utile cancellare le cartelle "Binaries", "DerivedDataCache", "Intermediate", "Saved" e il file ".sln" prima di generare i file.
+        \end{suggestionbox}
+
+
+    % PACKAGING
+    \section{Packaging}
+        I seguenti errori sono relativi al packaging del gioco.
+
+        \subsection{Errore: the sdk for windows is not installed properly}
+            Questo errore appare quando non si e' installato \href{https://dotnet.microsoft.com/en-us/download/dotnet/3.1}{".NET Desktop Runtime 3.1.30"} per Windows.
+
+
+    % FLICKERING OMBRE
+    \section{Evitare flickering delle ombre}
+        Per evitare il flickering delle ombre bisogna andare in:
+
+        \begin{lstlisting}
+            Settings > project settings > engine > rendering
+        \end{lstlisting}
+
+        E impostare l'opzione "Shadow Map Method" a "Shadow Maps".
+
+        Un'altra opzione e' impostare la mobility delle luci a "Movable".
+
+
+    % CRASH DI UNREAL ENGINE
+    \section{Crash di Unreal Engine}
+        Se Unreal Engine crasha e' molto probabile che si stia cercando di accedere ad un puntatore nullo o invalido.
+
+        Alcune possibili cause sono:
+        \begin{itemize}
+            \item Non specificare sopra ad un TArray di puntatori "UPROPERTY()": il garbage collector ha eliminato per errore oggetti che non dovevano essere eliminati.
+
+                Aggiungere "UPROPERTY()" permette di dire ad Unreal Engine di gestire la memoria dinamica in modo corretto.
+
+                Se non si aggiunge UPROPERTY si rischia di accedere ad un puntatore che non e' piu' valido facendo crashare Unreal Engine.
+
+            \item Utilizzare Find() su una TMap ed accedere immediatamente al puntatore restituito: Find() restituisce un puntatore nullptr se non e' stato possibile trovare un oggetto con la chiave specificata.
+
+                Accedere al puntatore nullo fa crashare il motore grafico.
+
+            \item Utilizzare NewObject all'interno di un costruttore: NewObject restituira' un puntatore nullptr che, una volta acceduto, fara' crashare l'editor.
+
+                Per risolvere il problema richiamare NewObject in un metodo diverso come, ad esempio, il metodo BeginPlay.
+        \end{itemize}
+
+
+    % ERRORI DI COMPILAZIONE
+    \section{Errori di compilazione}
+
+        \subsection{Nested Containers are not supported}
+            Questo errore indica che si sta usando UPROPERTY() su un attributo che e' un TArray che contiene un TArray, una TMap che contiene una TMap, \dots E tutte le varie combinazioni di collezioni innestate una dentro l'altra.
+
+            Unreal Engine non supporta la dichiarazione di queste variabili come UPROPERTY().
+
+            Per risolvere il problema e' possibile creare una classe che eredita dal tipo interno e poi creare una collezione di istanze della classe creata.
+
+            \begin{notebox}
+                Esempio:
+
+                \begin{minted}[autogobble]{cpp}
+                    UPROPERTY()
+                    TArray<TArray<int>> mioAttributo;
+                \end{minted}
+
+                Questo codice fara' lanciare un errore di compilazione.
+
+                Si potrebbe pensare di risolvere il problema rimuovendo UPROPERTY():
+
+                \begin{minted}[autogobble]{cpp}
+                    TArray<TArray<int>> mioAttributo;
+                \end{minted}
+
+                Questa soluzione compila ma senza UPROPERTY si rischia che il garbage collector elimini il contenuto dell'array (con "int" NON DOVREBBE succedere ma con oggetti o con puntatori ad oggetti piu' complessi si).
+
+                La soluzione e' creare una classe MioContenitore che eredita da TArray<int>. In questo modo l'attributo sara' di tipo:
+                \begin{minted}[autogobble]{cpp}
+                    UPROPERTY()
+                    TArray<MioContenitore> mioAttributo;
+                \end{minted}
+
+                Questa soluzione compila e il contenuto del TArray non sara' eliminato erroneamente dal garbage collector.
+            \end{notebox}
+
+            Un'altra soluzione e' creare una collezione di struct/oggetti e ogni struct/oggetto contiene un attributo con la collezione interna.

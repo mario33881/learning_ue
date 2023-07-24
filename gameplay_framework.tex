@@ -1,0 +1,68 @@
+
+\chapter{Gameplay Framework}
+
+    % GIOCATORE
+    \section{Giocatore}
+        In Unreal Engine il giocatore e' composto da due unita':
+        \begin{enumerate}
+            \item Pawn: personaggio grafico che interagisce con il mondo di gioco
+            \item Controller: interfaccia tra il giocatore reale e il pawn. Gestisce l'interfaccia grafica e in generale l'input dell'utente.
+        \end{enumerate}
+
+
+    % GAME MODE
+    \section{Game mode}
+        La game mode permette di configurare l'aspetto del pawn e il controller, come inizia un livello, cosa succede quando si smette di giocare\dots E' la prima cosa che viene istanziata quando viene caricata una mappa e quindi e' ideale per fare setup iniziali.
+
+        E' possibile configurare la game mode dell'intero progetto e poi sovrascriverla nei singoli livelli in cui si desidera avere una game mode diversa (se non viene sovrascritta la modalita' di gioco viene ereditata da quella del progetto) dalla finestra:
+
+        \begin{lstlisting}
+            Project Settings > Maps & Modes
+        \end{lstlisting}
+
+        \begin{notebox}
+            In selected mode e' possibile modificare ulteriori informazioni tra cui "default pawn class", ovvero il modello del giocatore.
+        \end{notebox}
+
+        Queste informazioni vengono caricate all'inizio di ogni livello e cancellate quando si passa ad un altro livello.
+
+        Per sovrascrivere la game mode bisogna modificare l'impostazine "gamemode override" in:
+        \begin{lstlisting}
+            window > world settings > game mode
+        \end{lstlisting}
+
+
+    % GAME STATE
+    \section{Game state}
+        Permette di memorizzare, processare e sincronizzare dati relativi all'interno gioco (come ad esempio un timer che indica quanto tempo manca al termine della partita)
+
+        Queste informazioni vengono caricate all'inizio di ogni livello e cancellate quando si passa ad un altro livello.
+
+
+    % PLAYER STATE
+    \section{Player state}
+        Permette di memorizzare, processare e sincronizzare dati relativi al giocatore (ad esempio la vita rimanente, il punteggio, \dots)
+
+        Queste informazioni vengono caricate all'inizio di ogni livello e cancellate quando si passa ad un altro livello.
+
+
+    % GAME INSTANCE
+    \section{Game Instance}
+        Sono le informazioni che vengono caricate quando viene aperto il gioco e che vengono cancellate quando viene chiuso il gioco.
+
+        E' utile memorizzare nella game instance tutti i dati che devono essere mantenuti nel passaggio tra un livello ed un altro.
+
+
+    % MODIFICA COMANDI
+    \section{Modifica comandi}
+        E' possibile configurare i comandi di controllo (mouse, tastiera, joystick, touch, ...) andando in:
+
+        \begin{lstlisting}
+        edit > project settings > engine > input
+        \end{lstlisting}
+
+        Ci sono due tipi di binding:
+        \begin{itemize}
+            \item action: quando si preme un pulsante fa qualcosa. Esempio: tasti della tastiera.
+            \item axis: ad ogni frame viene effettuato un qualche check. In genere e' usato per qualcosa di "mobile", come il mouse e i joystick.
+        \end{itemize}

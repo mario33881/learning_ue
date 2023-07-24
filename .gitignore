@@ -1,0 +1,12 @@
+dist/*/
+dist/*.aux
+dist/*.bbl
+dist/*.bcf
+dist/*.blg
+dist/*.fdb_latexmk
+dist/*.fls
+dist/*.log
+dist/*.out
+dist/*.xml
+dist/*.gz
+dist/*.toc

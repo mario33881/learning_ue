@@ -1,0 +1,139 @@
+\documentclass{book}
+
+% imposta encoding e lingua italiana
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+
+% imposta dimensioni pagina
+\usepackage[bottom=1.5cm, right=3.5cm, left=3.5cm, top=2.5cm]{geometry}
+
+\usepackage{import}     % per suddividere la documentazione su piu' file .tex
+\usepackage{emptypage}  % per rimuovere numeri di pagina dalle pagine vuote
+\usepackage{hyperref}   % permette di aggiungere link cliccabili con \href
+\usepackage{tcolorbox}  % cornice attorno alle note
+\usepackage{nameref}    % permetti di ottenere il nome di una sezione dal label
+
+\usepackage[outputdir=dist]{minted}  % syntax highlight degli snippet di codice
+
+% per snippet di codice "non compilabile" (deve ignorare whitespace a inizio riga)
+\usepackage{listings}
+\usepackage{lstautogobble}
+
+\usepackage{hyphenat}  % permette di andare a capo correttamente con le parole
+\usepackage{csquotes}  % permette di visualizzare correttamente '<' e '>' (invece di visualizzare '?')
+\usepackage{biblatex}  % per citare le fonti attraverso la bibliografia
+\usepackage{graphicx}  % permette di inserire figure
+\usepackage{float}     % permette di inserire le figure nel punto specificato
+
+% includi i comandi custom
+\import{./}{custom_commands.tex}
+
+% le immagini della documentazione sono contenute nella cartella assets
+\graphicspath{ {./assets/} }
+
+% Importa il file con la bibliografia
+\addbibresource{bibliography.bib}
+
+% rimuovi spazi e tabulazioni a inizio riga nelle sezioni lstlisting
+\lstset{
+    basicstyle=\ttfamily,
+    mathescape=true,
+    escapeinside=||,
+    autogobble
+}
+
+
+% informazioni pagina di copertina
+\author{Stefano Zenaro}
+\date{Settembre 2022}
+\title{Learning Unreal Engine}
+
+
+\begin{document}
+
+    % ------------------------------------------------------------------
+    %
+    % Titolo documento
+
+    \maketitle
+    \newpage
+
+    \tableofcontents
+
+
+    % ------------------------------------------------------------------
+    %
+    % Setup iniziale
+    \import{./}{setup_iniziale.tex}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Introduzione
+    \import{./}{introduzione.tex}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Gameplay Framework
+    \import{./}{gameplay_framework.tex}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Blueprint
+    \import{./}{blueprint.tex}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Programmazione C++
+    \import{./}{programmazione_cpp.tex}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Plugin
+    \import{./}{plugin.tex}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Annotazioni
+
+    \chapter{Annotazioni}
+
+    \section{Asset}
+        Per trovare gli asset e' comodo cercare nel marketplace di Unreal Engine oppure su Quixel.
+
+        SketchFab contiene degli asset gratuiti e a pagamento.
+
+        Un altro sito che contiene invece personaggi e animazioni per i personaggi e' Mixamo.
+
+    \section{Environment Light Mixer}
+        Strumento che permette di lavorare con la luce.
+
+    \section{Hotkey utili}
+
+        \begin{itemize}
+            \item shift + F1 permette di ottenere il controllo del mouse mentre sta andando il gioco.
+            \item tab + ESC permette di fermare il gioco che e' in esecuzione.
+            \item alt + P fa partire il gioco.
+        \end{itemize}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Troubleshooting
+    \import{./}{troubleshooting.tex}
+
+
+    % ------------------------------------------------------------------
+    %
+    % Bibliografia
+    \chapter{Bibliografia}
+    \nocite{*}
+    \printbibliography[heading=none]
+
+\end{document}

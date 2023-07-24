@@ -1,0 +1,822 @@
+\chapter{Programmazione C++ per UE} \label{chapter:cpp}
+
+    Per programmare in C++ in Unreal Engine occorre installare Visual Studio e una versione aggiornata di .NET framework SDK.
+    \begin{suggestionbox}
+        Per installare correttamente Visual Studio e' consigliato seguire \href{https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/}{la guida ufficiale}.
+    \end{suggestionbox}
+
+    \begin{suggestionbox}
+        Consiglio anche di provare l'editor \href{https://www.jetbrains.com/lp/rider-unreal/}{Rider for Unreal} della JetBrains (gli stessi sviluppatori di IntelliJ IDEA e PyCharm).
+
+        E' a pagamento ma e' anche possibile utilizzarlo gratuitamente con la licenza da studente o universitaria.
+
+        E' un drop-in replacement di Visual Studio: e' sufficiente aprire il progetto di Unreal Engine e dirgli di utilizzare la soluzione (file .sln) di Visual Studio per cominciare ad utilizzare l'IDE.
+
+        Personalmente ho notato che richiede piu' risorse di Visual Studio ma e' piu' integrato nell'ambiente di Unreal Engine:
+        riconosce le keyword delle macro, permette l'eliminazione di file C++ senza dover rigenerare a mano la soluzione mediante il file uproject,
+        segnala variabili che non usano le best practice di Unreal Engine, segnala attributi che potrebbero essere eliminati dal garbage collector di Unreal Engine,
+        file header importati ma non usati, variabili e metodi dichiarati ma mai usati, \dots
+    \end{suggestionbox}
+
+    Quando si crea un nuovo progetto Unreal Engine e' possibile specificare che verra' utilizzato il linguaggio C++ al posto dei blueprint per gestire la logica del gioco.
+    Quando si aprira' il progetto verra' aperto automaticamente Visual Studio.
+    \begin{notebox}
+        Se non si apre e' possibile andare in "Tools" e premere il tasto "Open Visual Studio".
+    \end{notebox}
+
+    \begin{notebox}
+        E' possibile (anzi, e' consigliato dagli sviluppatori di Unreal Engine) combinare C++ e Blueprint all'interno di un unico progetto.
+
+        Se il progetto e' stato configurato per utilizzare i blueprint e' sufficiente creare una classe C++ e Unreal Engine si occupera' di creare tutti i file necessari per programmare in C++.
+
+        Per creare una classe C++ e' possibile fare click con il tasto destro nel content browser e poi cliccare su "new C++ class" oppure andare in "Tools" e cliccare su "new C++ Class".
+    \end{notebox}
+
+    E' consigliato tenere chiuso Unreal Engine mentre si programma in Visual Studio / Rider per evitare problemi con la funzionalita' "Live Coding".
+
+    Questa funzionalita' e' pensata per compilare dinamicamente il progetto senza chiudere e riaprire Unreal Engine quando viene effettuata una modifica sul codice C++.
+    Alcuni utenti segnalano che utilizzando questa funzione i progetti Unreal Engine possono corrompersi.
+
+    \begin{suggestionbox}
+        E' possibile disabilitare il "Live Coding" andando nelle impostazioni del progetto.
+    \end{suggestionbox}
+
+    In Visual Studio selezionare come metodo di build "Development Editor".
+
+
+    % CLASSI PREDEFINITE
+    \section{Classi predefinite}
+
+        Unreal Engine definisce delle classi predefinite a cui e' possibile aggiungere funzionalita' sfruttando l'ereditarieta' delle classi.
+
+        Tra le classi predefinite di Unreal Engine troviamo:
+
+        \begin{itemize}
+            \item Actor: rappresenta un oggetto che si puo' piazzare nel mondo di gioco. E' possibile legare ad un actor del codice, delle mesh, dell'audio da far partire quando viene lanciato un evento, \dots
+
+                Dal details panel e' possibile aggiungere componenti all'actor cliccando sul pulsante "Add". I componenti permettono di aggiungere funzionalita' all'actor in modo modulare.
+
+                Tra i componenti che si possono aggiungere agli Actor ci sono:
+                \begin{itemize}
+                    \item Arrow: e' una freccia rossa. Di default e' posizionata nell'origine relativa all'actor. Permette di recuperare facilmente la sua posizione dal codice C++.
+                    \item Audio: permette di far partire un suono configurabile.
+                \end{itemize}
+
+                E' anche possibile creare componenti custom.
+
+            \item Pawn: e' un Actor, puo' essere assegnato ad un giocatore oppure ad una AI. Puo' ricevere input. E' legato ad una camera. Non ha dati collegati ad esso.
+            \item TriggerVolume: e' un oggetto che si puo' piazzare nel mondo di gioco. Riconosce due eventi: quando un oggetto entra all'interno del volume e quando esce.
+
+                E' possibile legare per ogni evento un metodo con del codice da eseguire quando viene lanciato l'evento.
+
+            \item UObject: e' l'oggetto di base di Unreal Engine da cui ereditano tutte le altre classi.
+
+            \item GameInstance: permette di definire una game instance. La game instance memorizza i suoi dati durante tutta l'esecuzione del gioco ed e' accessibile da piu' livelli.
+
+                \begin{minted}[autogobble]{cpp}
+                    // Supponiamo di aver creato (e configurato nell'editor) una nuova
+                    // game instance chiamata DigitalTwinGameInstance: e' possibile richiederla...
+                    UDigitalTwinGameInstance* GameInstance = Cast<UDigitalTwinGameInstance>(
+                        UGameplayStatics::GetGameInstance(GetWorld())
+                    );
+
+                    // ... E accedere a attributi e metodi public:
+                    UE_LOG(LogTemp, Warning, TEXT("GameInstance test value: %d"), GameInstance->TestValue);
+                \end{minted}
+
+            \item Actor Component: e' un componente custom che puo' essere aggiunto ad un actor. Non ha posizione nella gerarchia dei componenti dell'actor: non e' possibile annidare actor component all'interno di altri component che appartengono allo stesso actor.
+            \item Scene component: e' un componente custom che puo' essere aggiunto ad un actor. Ha una posizione nella gerarchia dei componenti dell'actor. Al contrario degli Actor component, i Scene component possono essere riposizionati nel mondo ed e' possibile recuperarne le coordinate dal codice.
+
+            \item Game state: corrisponde al "model" del pattern MVC, contiene i dati, funzioni per memorizzare o caricare i dati, \dots
+            \item Game mode: definisce la logica. Definisce eventi in base alle collisioni, chiede al game state di fare qualcosa. Il giocatore interagisce con la game mode.
+
+                Premendo il tasto "blueprints" e' possibile accedere alla game mode.
+
+                Ci sono 4 impostazioni della game mode che possono essere modificare:
+                \begin{itemize}
+                    \item Game state
+                    \item Pawn: sa quali animazioni eseguire, quali oggetti possiede, \dots
+                    \item HUD: UI all'interno del gioco. Timer, vita, \dots
+                    \item PlayerController: interfaccia tra l'input e il pawn.
+                \end{itemize}
+
+                Su "edit", "project settings" e' possibile selezionare la game mode iniziale e la mappa iniziale sia in caso di editing sia in caso di gioco.
+
+            \item \dots
+        \end{itemize}
+
+        \begin{warningbox}
+            NON e' detto che il costruttore (quando presente) venga sempre richiamato alla creazione di ogni istanza di una classe.
+
+            Il costruttore viene utilizzato solo per costruire un template delle istanze della classe, non per eseguire operazioni complesse.
+
+            Provando ad esempio a richiamare il metodo "NewObject" per istanziare un oggetto di una classe che eredita da UObject
+            si otterra' un puntatore nullptr (si corre quindi facilmente il rischio di far crashare Unreal Engine se si tenta di accedere al puntatore).
+        \end{warningbox}
+
+
+    % CLASSE UOBJECT
+    \section{UObject}
+        E' l'oggetto di base di Unreal Engine da cui ereditano tutte le altre classi.
+
+        Dichiarando che una nostra classe eredita dalla classe UObject permettiamo ad Unreal Engine di gestire vari aspetti dell'oggetto tra cui la gestione della memoria mediante il suo garbage collector.
+
+        Gli oggetti che ereditano direttamente da UObject non possono essere piazzati nel mondo ma possono essere istanziati attraverso la chiamata:
+
+        \begin{minted}[autogobble]{cpp}
+            UClasseCheEreditaDaUObject* NomeVariabile = NewObject<UClasseCheEreditaDaUObject>();
+        \end{minted}
+
+        La chiamata restituira' un puntatore che permette di gestire l'oggetto. Se viene lasciato pendente il puntatore il garbage collector si occupera' di eliminare l'oggetto.
+
+        Metodi utili:
+        \begin{itemize}
+            \item GetName(): restituisce una FString con il nome dell'oggetto.
+            \item IsA(): permette di verificare se un oggetto e' istanza di una particolare classe.
+
+                Esempio d'uso:
+                \begin{minted}[autogobble]{cpp}
+                    ActorDiCuiVerificareLaClasse->IsA(ASottoclasseDiActor::StaticClass())
+                \end{minted}
+
+                ActorDiCuiVerificareLaClasse e' un Actor di cui voglio verificare che appartenga ad una particolare classe.
+                ASottoclasseDiActor e' il nome della classe verificata: se ActorDiCuiVerificareLaClasse e' istanza di ASottoclasseDiActor
+                il metodo restituira' true, altrimenti restituira' false.
+
+        \end{itemize}
+
+
+    % CLASSE ACTOR
+    \section{Classe Actor}
+        La classe AActor rappresenta un oggetto che puo' essere piazzato nel mondo di gioco.
+
+        Metodi utili:
+        \begin{itemize}
+            \item GetActorLocation(): restituisce un vettore di coordinate X, Y, Z dell'actor nel mondo.
+            \item SetActorLocation(): imposta la posizione di un actor
+        \end{itemize}
+
+        \subsection{Modificare il materiale di una mesh a runtime}
+            Modificare a runtime il materiale di una mesh significa permettere di modificare l'aspetto di un oggetto mentre il gioco e' in esecuzione.
+
+            Un esempio di applicazione di questa funzionalita' e' creare una luce che lampeggia.
+
+            Per prima cosa bisogna creare un componente mesh e aggiungerlo all'actor:
+
+            \begin{minted}[autogobble]{cpp}
+                // Mesh e' un attributo di tipo class UStaticMeshComponent*
+                MyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("My Mesh"));
+                MyMesh->SetupAttachment(RootComponent);
+            \end{minted}
+
+            Poi bisogna creare oggetti che rappresentano i materiali:
+
+            \begin{minted}[autogobble]{cpp}
+                // attributi: (EditAnywhere permette di impostare dall'editor il materiale)
+                // UPROPERTY(EditAnywhere)
+                // class UMaterialInterface* OnMaterial;
+                // UPROPERTY(EditAnywhere)
+                // class UMaterialInterface* OffMaterial;
+                OnMaterial = CreateDefaultSubobject<UMaterial>(TEXT("OnMaterial"));
+                OffMaterial = CreateDefaultSubobject<UMaterial>(TEXT("OffMaterial"));
+            \end{minted}
+
+            Durante l'esecuzione e' possibile impostare il materiale della mesh richiamando il seguente metodo:
+            \begin{minted}[autogobble]{cpp}
+                MyMesh->SetMaterial(1, OnMaterial);
+                // oppure
+                MyMesh->SetMaterial(1, OffMaterial);
+            \end{minted}
+
+            \begin{notebox}
+                Il primo parametro rappresenta l'indice dei materiali della mesh:
+                se la mesh e' composta di un materiale bisognera' sostituire "1" con "0".
+
+                Se la mesh e' composta da piu' di un materiale bisogna scegliere l'indice correttamente:
+                visualizzando all'interno dell'editor la mesh e' possibile vedere la lista dei materiali che la compongono.
+
+                L'indice inserito come primo parametro corrisponde all'indice del materiale presente in quella lista.
+            \end{notebox}
+
+
+    % CLASSE SCENE COMPONENT
+    \section{Classe Scene Component}
+        Da "Tools" e' possibile selezionare la voce "New C++ Class".
+
+        Da li e' possibile selezionare "Scene Component" e cliccando avanti dargli un nome.
+
+        La classe Scene Component ha:
+        \begin{itemize}
+            \item Un costruttore. Di default viene impostato:
+
+                \begin{minted}[autogobble]{cpp}
+                    PrimaryComponentTick.bCanEverTick = true;
+                \end{minted}
+
+                Indica che la classe del componente contiene un metodo che deve essere chiamato periodicamente ad ogni tick.
+
+                \begin{notebox}
+                    Un tick e' un frame.
+                \end{notebox}
+
+            \item BeginPlay: (gestisce l'evento BeginPlay) metodo che viene chiamato quando viene eseguito il livello.
+            \item TickComponent: (gestisce l'evento TickComponent) metodo che viene chiamato ogni frame
+        \end{itemize}
+
+
+    % CLASSE PAWN
+    \section{Classe Pawn}
+
+        Da "Tools" e' possibile selezionare la voce "New C++ Class".
+
+        Da li e' possibile selezionare "Pawn" e cliccando avanti dargli un nome.
+
+        \begin{notebox}
+            Visual Studio chiedera' se si desidera ricaricare tutto: dirgli di si.
+        \end{notebox}
+
+        Di default una classe che eredita da Pawn ha:
+        \begin{itemize}
+            \item Un costruttore: viene richiamato quando viene creato l'oggetto della classe.
+
+                Permette di impostare dei valori di default di alcune proprieta'.
+
+            \item Il metodo "BeginPlay": viene chiamato quando viene fatto partire un livello.
+            \item Il metodo "Tick": viene chiamato per ogni frame. Utile per aggiornare le animazioni, per la vita, \dots
+            \item Il metodo "SetupPlayerInputComponent": permette di registrare ad ogni input delle azioni.
+        \end{itemize}
+
+
+    % UPROPERTY
+    \section{UPROPERTY}
+        \href{https://docs.unrealengine.com/5.0/en-US/unreal-engine-uproperty-specifiers}{UPROPERTY} permette di specificare il comportamento di una proprieta' all'interno del motore grafico e dell'editor.
+
+        Un'altra funzione MOLTO IMPORTANTE che ha UPROPERTY e' specificare al garbage collector di Unreal Engine come gestire oggetti complessi memorizzati in memoria dinamica.
+
+        \begin{warningbox}
+            Se si nota che durante l'esecuzione di Unreal Engine avvengono dei crash improvvisi apparentemente immotivati
+            e' possibile che il garbage collector abbia eliminato un oggetto e accedendo al suo puntatore e' avvenuto il crash.
+
+            Questo puo' capitare, ad esempio, quando un TArray memorizza puntatori di oggetti: finche' il garbage collector non elimina uno di questi oggetti
+            e finche' non si tenta di accedere alla memoria dell'oggetto eliminato funzionera' tutto.
+            Nel momento in cui avviene l'accesso Unreal Engine crashera'.
+
+            Per risolvere il problema e' sufficiente aggiungere "UPROPERTY()" sopra agli attributi (sopra alla dichiarazione del TArray in questo caso).
+        \end{warningbox}
+
+        La sintassi per utilizzare questi modificatori e':
+        \begin{lstlisting}
+            UPROPERTY(<modificatore 1>, ...)
+            <proprieta'/attributo>
+        \end{lstlisting}
+
+        Ecco un elenco di alcuni modificatori:
+        \begin{itemize}
+            \item VisibleAnywhere: permette di rendere una proprieta' visible in tutte le finestre (ma NON la rende modificabile).
+
+                Dopo aver aggiunto questo modificatore ed aver selezionato dall'outliner un oggetto e' possibile vedere nel details panel il valore della proprieta' esposta.
+
+            \item EditAnywhere: permette di visualizzare e di modificare una proprieta' (utile per modificare il valore di interi, booleani, float, \dots).
+
+                Dopo aver aggiunto questo modificatore ed aver selezionato dall'outliner un oggetto e' possibile vedere E modificare nel details panel il valore della proprieta' esposta.
+
+            \item VisibleDefaultsOnly: come VisibleAnywhere ma permette di visualizzare la proprieta' solo all'interno dell'editor dei blueprint.
+            \item EditDefaultsOnly: come EditAnywhere ma permette di visualizzare e modificare la proprieta' solo all'interno dell'editor dei blueprint.
+            \item VisibleInstanceOnly: come VisibleAnywhere ma permette di visualizzare la proprieta' solo quando e' stata creata l'istanza di un oggetto nel mondo.
+            \item EditInstanceOnly: come EditAnywhere ma permette di visualizzare e modificare la proprieta' solo quando e' stata creata l'istanza di un oggetto nel mondo.
+            \item Category: permette di specificare sotto a quale categoria nel details panel sara' presente il campo che visualizza il valore della proprieta'.
+
+                Esempio di sintassi:
+                \begin{minted}[autogobble]{cpp}
+                    UPROPERTY(EditAnywhere, Category = "MyCategory")
+                    float speed = 10.0f;
+                \end{minted}
+
+                \begin{notebox}
+                    E' possibile mettere piu' proprieta' legate logicamente secondo un qualche criterio all'interno della stessa categoria per organizzare le proprieta'.
+                \end{notebox}
+
+            \item \href{https://docs.unrealengine.com/5.0/en-US/metadata-specifiers-in-unreal-engine/}{meta}: permette di aggiungere metadati tra cui:
+
+                \begin{itemize}
+                    \item AllowPrivateAccess: permette di visualizzare una proprieta' nell'editor anche se la proprieta' e' dichiarata private nel codice.
+
+                        Esempio di sintassi:
+                        \begin{minted}[autogobble]{cpp}
+                            UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
+                            float speed = 10.0f;
+                        \end{minted}
+
+                    \item EditCondition: permette di modificare il valore di una proprieta' solo se una condizione e' vera.
+
+                        Esempio d'uso:
+                        \begin{minted}[autogobble]{cpp}
+                            UPROPERTY(EditAnywhere, Category = "Test", meta = (EditCondition = "Variable > 0.0"))
+                            float speed = 10.0f;
+                        \end{minted}
+
+                        Variable deve essere piu' grande di zero per poter modificare il valore di speed.
+
+                    \item \dots
+                \end{itemize}
+
+            \item BlueprintReadOnly: rende la proprieta' accessibile dai blueprint
+            \item BlueprintReadWrite: rende la proprieta' accessibile e modificabile dai blueprint
+            \item \dots
+        \end{itemize}
+
+        \begin{warningbox}
+            I modificatori di visibilita' e di edit non possono essere usati contemporaneamente. Inoltre e' solamente possibile specificare un unico modificatore di tipo edit/visibilita' per UPROPERTY.
+        \end{warningbox}
+
+
+    % UFUNCTION
+    \section{UFUNCTION}
+        \href{https://docs.unrealengine.com/5.0/en-US/ufunctions-in-unreal-engine/}{UFUNCTION} permette di rendere una funzione visibile dai blueprint.
+
+        Un'altra funzionalita' utile di UFUNCTION e' di permettere ad un metodo di essere chiamato quando viene lanciato un evento (callback).
+
+        Tra i parametri di UFUNCTION ci sono:
+        \begin{itemize}
+            \item BlueprintPure: restituisce immediatamente un valore dati dei parametri
+            \item BlueprintCallable: restituisce un valore quando viene richiamata
+            \item BlueprintImplementableEvent: permette di implementare una funzione attraverso un blueprint permettendo di organizzare un blueprint in sotto-blueprint.
+
+                \begin{notebox}
+                    Non e' possibile implementare la funzione  in codice C++
+                \end{notebox}
+
+            \item BlueprintNativeEvent: permette di implementare la funzione sia in codice C++, sia sovrascriverla con i blueprint.
+
+                Per aggiungere l'implementazione nel codice C++ occorre aggiungere al nome della funzione "\_Implementation".
+
+                \begin{notebox}
+                    Per richiamare la funzione da un altra funzione nel codice NON bisogna aggiungere "\_Implementation".
+                \end{notebox}
+        \end{itemize}
+
+
+    % DEBUGGING
+    \section{Debugging}
+
+        \subsection{Logging}
+
+            Per scrivere messaggi di log e' possibile usare la sintassi:
+            \begin{lstlisting}
+                UE_LOG(
+                    <categoria>,
+                    <verbosita'>,
+                    <messaggio>,
+                    [<parametri>, ...]
+                );
+            \end{lstlisting}
+
+            Dove:
+            \begin{itemize}
+                \item categoria: e' il tipo di log. Tipicamente si usa "LogTemp" per indicare che il log viene memorizzato su un file temporaneo.
+                \item verbosita': specifica la gravita' di un messaggio. Tra le verbosita' troviamo:
+                    \begin{itemize}
+                        \item Warning
+                        \item Error
+                        \item Fatal
+                    \end{itemize}
+                \item messaggio: e' il messaggio da visualizzare. La sintassi da usare e':
+
+                    \begin{minted}[autogobble]{cpp}
+                        TEXT("messaggio da visualizzare nei log")
+                    \end{minted}
+
+                    All'interno della stringa e' possibile inserire dei valori indicando il simbolo di percentuale seguito da un carattere che indica il tipo della variabile di cui visualizzare il valore:
+
+                    \begin{minted}[autogobble]{cpp}
+                        TEXT("Su questa riga apparira' un numero intero: %d")
+                        TEXT("Su questa riga apparira' un float: %f")
+                        TEXT("E qui una stringa: %s")
+                    \end{minted}
+
+                    \begin{notebox}
+                        I caratteri da inserire dopo il simbolo del percentuale sono gli stessi della programmazione in C per la funzione printf.
+                    \end{notebox}
+
+                    Le variabili vanno indicate come quarto, quinto, \dots n-esimo parametro di UE\_LOG.
+
+                \item parametri: variabili da cui recuperare i valori per inserirli nel testo.
+
+                    \begin{warningbox}
+                        Per le stringhe bisogna prefissare al nome della variabile l'asterisco "*".
+                    \end{warningbox}
+            \end{itemize}
+
+            Esempio di messaggi di log:
+
+            \begin{minted}[autogobble]{cpp}
+                UE_LOG(LogTemp, Warning, TEXT("Su questa riga apparira' un numero intero: %d"), IntVariable);
+                UE_LOG(LogTemp, Error, TEXT("Su questa riga apparira' un float: %f"), FloatVariable);
+                UE_LOG(LogTemp, Fatal, TEXT("E qui una stringa: %s"), *StringVariable);
+            \end{minted}
+
+        \subsection{Messaggi a video}
+
+            Sintassi:
+            \begin{minted}[autogobble]{cpp}
+                GEngine->AddOnScreenDebugMessage(<id>, <tempo_secondi>, <colore>, <messaggio>);
+            \end{minted}
+
+            Dove:
+            \begin{itemize}
+                \item id: identificativo univoco che permette di evitare di far apparire lo stesso messaggio piu' volte
+                \item tempo\_secondi: tempo in secondi da aspettare prima di visualizzare il messaggio (float)
+                \item colore: colore del testo.
+
+                    Esempio:
+                    \begin{minted}[autogobble]{cpp}
+                        FColor::Black // colore nero
+                    \end{minted}
+
+                \item messaggio: messaggio da visualizzare
+
+                    Esempio:
+                    \begin{minted}[autogobble]{cpp}
+                        FString::Printf(TEXT("Questa e' una stringa: %s"), *StringVariable)
+                    \end{minted}
+
+            \end{itemize}
+
+            Esempio:
+            \begin{minted}[autogobble]{cpp}
+                GEngine->AddOnScreenDebugMessage(
+                    1,
+                    100.0f,
+                    FColor::Black,
+                    FString::Printf(TEXT("Questa e' una stringa: %s"), *StringVariable)
+                );
+            \end{minted}
+
+        \subsection{Figure geometriche}
+
+            E' possibile disegnare delle figure geometriche sull'oggetto che si sta debuggando.
+
+            Bisogna includere la libreria:
+            \begin{minted}[autogobble]{cpp}
+                #include "DrawDebugHelpers.h"
+            \end{minted}
+
+            Tra le figure geometriche troviamo:
+            \begin{itemize}
+                \item DrawDebugSphere: disegna una Sfera.
+
+                    \begin{examplebox}
+                        \begin{minted}[autogobble]{cpp}
+                            DrawDebugSphere(
+                                // mondo
+                                GetWorld(),
+                                // posizione
+                                GetActorLocation() + FVector(0,0,200.0f),
+                                // raggio
+                                20.0f,
+                                // numero segmenti della sfera
+                                20,
+                                // colore
+                                FColor::Orange,
+                                // righe persistenti
+                                true,
+                                // tempo di durata
+                                100.0f,
+                                // priorita'/profondita'
+                                -1.0f,
+                                // spessore
+                                2.0f
+                            );
+                        \end{minted}
+                    \end{examplebox}
+
+                \item DrawDebugBox: disegna un parallelepipedo.
+
+                    \begin{examplebox}
+                        \begin{minted}[autogobble]{cpp}
+                            DrawDebugBox(
+                                // mondo in cui creare il parallelepipedo
+                                GetWorld(),
+                                // posizione del parallelepipedo
+                                GetActorLocation(),
+                                // dimensioni del parallelepipedo
+                                GetComponentsBoundingBox().GetExtent(),
+                                // colore
+                                FColor::Red,
+                                // righe persistenti
+                                true,
+                                // tempo di durata
+                                999,
+                                // priorita'/profondita'
+                                0,
+                                // spessore
+                                2
+                            );
+                        \end{minted}
+                    \end{examplebox}
+
+            \end{itemize}
+
+
+    % SPAWNACTOR
+    \section{SpawnActor}
+
+        Per creare l'istanza di un Actor (o di una classe derivata da AActor) a tempo di runtime e' possibile chiamare la funzione SpawnActor.
+
+        \begin{minted}[autogobble]{cpp}
+            GetWorld()->SpawnActor(<parametri>);
+        \end{minted}
+
+        SpawnActor restituisce un puntatore che permette di richiamare i metodi dell'actor.
+
+
+    % COLLEZIONI DI OGGETTI
+    \section{Collezioni di oggetti}
+
+        Unreal Engine mette a disposizione diversi tipi di collezioni.
+
+        \subsection{TArray}
+            E' un array dinamico di oggetti.
+
+            Metodi utili:
+            \begin{itemize}
+                \item Add(element): aggiunge element alla lista
+                \item AddUnique(element): aggiunge element alla lista solo se element non e' gia' presente nella lista (verifica con operatore ==)
+                \item Insert(element, index): inserisce element nella lista in posizione index
+                \item Sort(): esegue l'ordinamento della lista. Gli oggetti devono essere confrontabili con l'operatore di minore "<".
+                \item Num(): restituisce il numero di oggetti nella lista
+                \item Find(element): restituisce l'indice di element oppure "INDEX\_NONE" ($-1$) se l'elemento non e' nella lista.
+                \item Remove(element): rimuove tutte le occorrenze di element dalla lista
+                \item RemoveSingle(element): rimuove solo la prima occorrenza di element dalla lista
+            \end{itemize}
+
+        \subsection{TMap}
+            E' una mappa/dizionario: memorizza coppie chiave-valore.
+
+            Esempio di dichiarazione con valori:
+            \begin{minted}[autogobble]{cpp}
+                // i tipi devono corrispondere
+                TMap<int, FString> MiaMappa = {
+                    {0, "A"},
+                    {1, "B"},
+                    // ...
+                };
+            \end{minted}
+
+            Metodi utili:
+            \begin{itemize}
+                \item Add(element): aggiunge element alla lista
+                \item Contains(key): restituisce true se la chiave esiste nella mappa
+                \item Find(key): restituisce un puntatore al valore corrispondente alla chiave oppure nullptr se la mappa non contiene quella chiave.
+                \item FindRef(key): restituisce una copia del valore corrispondente alla chiave oppure un oggetto con il valore di "default" dello stesso tipo del valore atteso.
+            \end{itemize}
+
+
+    % ENUMERAZIONI
+    \section{Enumerazioni}
+        Le enumerazioni permettono di creare un tipo personalizzato specificando tutti i suoi possibili valori.
+
+        Una variabile di tipo enumerazione deve assumere obbligatoriamente un valore contenuto tra l'insieme dei valori specificati.
+
+        Per definire una enumerazione bisogna creare un header file con il seguente contenuto:
+
+        \begin{minted}[autogobble]{cpp}
+            #pragma once
+
+            UENUM()
+            enum ENomeDellaEnumerazione {
+                // elementi separati da virgola
+            };
+        \end{minted}
+
+        Modificare in modo opportuno "NomeDellaEnumerazione" con il nome che si vuole dare all'enumerazione
+        e specificare tutti i possibili valori dell'enumerazione separati da virgola all'interno delle parentesi graffe.
+
+        E' possibile avere un attributo del tipo dell'enumerazione aggiungendolo in questo modo:
+
+        \begin{minted}[autogobble]{cpp}
+            UPROPERTY()
+            TEnumAsByte<ENomeDellaEnumerazione> NomeAttributo;
+        \end{minted}
+
+
+    % FUNZIONI E MACRO UTILI
+    \section{Funzioni e macro utili}
+
+        Questa sezione contiene funzioni e macro utili che non appartengono alle classi specificate in questo capitolo.
+
+        \begin{itemize}
+            \item Cast<T>(): permette di eseguire in modo safe il casting di un puntatore.
+
+                Esempio d'uso:
+                \begin{minted}[autogobble]{cpp}
+                    // VecchiaVariabile e' un puntatore a VecchioTipo.
+                    // Voglio eseguire il casting per renderlo puntatore a NuovoTipo
+                    NuovoTipo* NuovaVariabile = Cast<NuovoTipo>(VecchiaVariabile);
+                \end{minted}
+
+            \item UKismetMathLibrary::IsPointInBox(): permette di verificare se una coordinata e' contenuta all'interno di un volume a forma di cubo.
+
+                Per utilizzare il metodo e' necessario includere l'header:
+                \begin{minted}[autogobble]{cpp}
+                    #include "Kismet/KismetMathLibrary.h"
+                \end{minted}
+
+                Esempio d'uso:
+                \begin{minted}[autogobble]{cpp}
+                    UKismetMathLibrary::IsPointInBox(
+                        Pallet->GetActorLocation(),
+
+                        // utilizzo le coordinate di questo oggetto (this) e le sue dimensioni
+                        // per verificare se l'actor Pallet e' contenuto in questo oggetto
+                        this->GetActorLocation(),
+                        this->GetComponentsBoundingBox().GetExtent()
+                    )
+                \end{minted}
+
+            \item UGameplayStatics::GetAllActorsOfClass(): permette di recuperare una lista di tutti gli actor di una classe.
+
+                \begin{minted}[autogobble]{cpp}
+                    #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
+
+                    TArray<AActor*> FoundActors;
+
+                    UGameplayStatics::GetAllActorsOfClass(
+                        // mondo che contiene gli actor
+                        GetWorld(),
+                        // classe degli actor
+                        AClasseDelActor::StaticClass(),
+                        // array che conterra' gli actor trovati
+                        FoundActors
+                    );
+                \end{minted}
+
+                \begin{notebox}
+                    Per utilizzare i metodi degli actor trovati e' necessario eseguire il casting dei puntatori nel TArray
+                    poiche' il metodo popola il TArray con puntatori ad AActor generici.
+                \end{notebox}
+
+            \item FMath::VInterpConstantTo(): dato un punto di partenza, un punto di arrivo, DeltaTime (frame) e velocita' calcola il prossimo punto in cui si dovrebbe trovare un oggetto nel prossimo frame.
+
+            \begin{minted}[autogobble]{cpp}
+                FMath::VInterpConstantTo(
+                    // coordinate attuali
+                    this->CurrentLocation,
+                    // coordinate di destinazione
+                    this->TargetLocation,
+                    // frame, parametro di Tick()
+                    DeltaTime,
+                    // velocita'
+                    this->InterpSpeed)
+            \end{minted}
+
+        \end{itemize}
+
+    % DELEGATE E EVENTI CUSTOM
+    \section{Delegate e eventi custom}
+
+        I delegate permettono di creare eventi, legare metodi agli eventi per eseguirli quando l'evento viene lanciato, lanciare un evento e iscriversi all'evento.
+
+        Esistono diversi tipi di delegate:
+        \begin{itemize}
+            \item Single: eseguono una singola callback
+            \item Multicast: possono eseguire piu' di una callback
+            \item Events: come i Multicast ma l'unica classe che puo' eseguire le callback e' la classe che ha dichiarato gli eventi.
+            \item Dynamic "Single": come Single ma le funzioni possono essere recuperate specificandone il nome
+            \item Dynamic "Multicast": come Multicast ma le funzioni possono essere recuperate specificandone il nome
+        \end{itemize}
+
+        \begin{notebox}
+            Per maggiori informazioni fare riferimento alla \href{https://docs.unrealengine.com/4.26/en-US/ProgrammingAndScripting/ProgrammingWithCPP/UnrealArchitecture/Delegates/}{documentazione ufficiale}
+        \end{notebox}
+
+        I seguenti esempi saranno relativi ai delegate "Single" ma l'uso degli altri delegate e' praticamente equivalente.
+
+        Per prima cosa devono essere dichiarati:
+        \begin{minted}[autogobble]{cpp}
+            // dichiara un delegate di nome DelegateName.
+            // la callback e' void senza parametri
+            DECLARE_DELEGATE(DelegateName)
+
+            // dichiara un delegate di nome DelegateName.
+            // la callback e' void e ha <Num> parametri dei tipi elencati.
+            // > <Num> appartiene all'insieme {One, Two, Three, Four, Five, ecc...}
+            DECLARE_DELEGATE_<Num>Params(DelegateName, Param1Type, Param2Type, ...)
+
+            // dichiara un delegate di nome DelegateName.
+            // la callback restituisce una variabile di tipo RetValType e non ha parametri
+            DECLARE_DELEGATE_RetVal(RetValType, DelegateName)
+
+            // dichiara un delegate di nome DelegateName.
+            // la callback restituisce una variabile di tipo RetValType
+            // e ha <Num> parametri dei tipi elencati.
+            // > <Num> appartiene all'insieme {One, Two, Three, Four, Five, ecc...}
+            DECLARE_DELEGATE_RetVal_<Num>Params(RetValType, DelegateName, Param1Type, Param2Type, ...)
+        \end{minted}
+
+        Per utilizzare il delegate bisogna definire una variabile che la contiene.
+        \begin{minted}[autogobble]{cpp}
+            // dichiariamo fuori dalla classe il delegate:
+            DECLARE_DELEGATE(DelegateName)
+
+            // classe che inviera' le notifiche
+            UPROPERTY()
+            DelegateName MioDelegate;
+
+            // posso usare un metodo setter a cui passo un reference al delegate
+            // per poter permettere dall'esterno di iscriversi al delegate
+            void SetMioDelegate(DelegateName& InMioDelegate)
+            {
+                this->MioDelegate = InMioDelegate;
+            }
+        \end{minted}
+
+        Poi deve essere eseguito il bind tra le callback che devono essere chiamate e i delegate stessi:
+        \begin{minted}[autogobble]{cpp}
+
+            // classe "AMiaClasseRicevitore" che deve ricevere le notifiche
+            UPROPERTY()
+            DelegateName MioDelegate;
+
+            // esegui il bind: verra' chiamata LaMiaCallback
+            void CreateBinding()
+            {
+                MioDelegate.Bind(
+                    // oggetto che contiene la callback da richiamare.
+                    // puo' essere anche un altro oggetto di un'altra classe
+                    this,
+
+                    // AMiaClasseRicevitore puo' essere una classe diversa
+                    // da quella di this (deve avere il metodo LaMiaCallback)
+                    &AMiaClasseRicevitore::LaMiaCallback
+                );
+            }
+
+
+            void LaMiaCallback()
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Hai chiamato la callback"));
+            }
+        \end{minted}
+
+        Infine l'oggetto che deve eseguire le callback deve richiamare il metodo:
+        \begin{minted}[autogobble]{cpp}
+            if (MioDelegate.IsBound())
+            {
+                // assicurati che ci sia un qualche
+                // legame prima di tentare l'esecuzione
+                MioDelegate.Execute();
+            }
+        \end{minted}
+
+
+    % TIMER
+    \section{Timer}
+
+        I timer permettono di eseguire un metodo dopo una certa quantita' di tempo e, eventualmente, di ripetere l'esecuzione del metodo ogni x secondi.
+
+        \begin{minted}[autogobble]{cpp}
+            // imposta attraverso il gestore di timer un nuovo timer
+            GetWorldTimerManager().SetTimer(
+                // oggetto per gestire il nuovo timer
+                // > definizione: struct FTimerHandle WaitTimerHandle;
+                WaitTimerHandle,
+                // oggetto che ha il metodo da eseguire
+                this,
+                // metodo da eseguire
+                &AMiaClasse::LaMiaCallback,
+                // intervallo (in secondi) ogni quanto eseguire il metodo
+                // > se il parametro successivo e' false questo valore viene ignorato
+                2.0f,
+                // false = esegui il metodo una volta sola,
+                // true = esegui il metodo ogni intervallo di tempo
+                false,
+                // tempo (in secondi) atteso prima di eseguire per la prima volta il metodo
+                this->TimeToWait
+            );
+        \end{minted}
+
+    % FSTRING
+    \section{FString}
+        FString e' una stringa mutabile di dimensione variabile.
+
+        Metodi utili:
+        \begin{itemize}
+            \item IsEmpty(): restituisce true se la stringa e' vuota.
+
+            \item Equals(): verifica se la stringa e' uguale ad un'altra stringa.
+
+            \item Split(): separa la stringa su cui viene chiamato il metodo in due parti "Left" e "Right" su un carattere.
+
+                \begin{examplebox}
+                    \begin{minted}[autogobble]{cpp}
+                        // ottieni MyString da qualche parte
+                        FString MyString = FString(TEXT("This is my test FString."));
+
+                        // separa MyString in due parti,
+                        // usa <Separator> come carattere separatore
+                        FString Left, Right;
+                        MyString.Split(TEXT("<Separator>"), &Left, &Right);
+                    \end{minted}
+                \end{examplebox}
+        \end{itemize}
